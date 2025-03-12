@@ -5,8 +5,8 @@ header('Content-Type: application/json');
 // Database connection
 $host = 'localhost';
 $db = 'bmi_calculator';
-$user = 'root'; // Replace with your MySQL username
-$pass = ''; // Replace with your MySQL password
+$user = 'root';
+$pass = ''; 
 $conn = new mysqli($host, $user, $pass, $db);
 
 if ($conn->connect_error) {
