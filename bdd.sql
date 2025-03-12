@@ -7,5 +7,6 @@ CREATE TABLE bmi_records (
     weight FLOAT NOT NULL,
     height FLOAT NOT NULL,
     bmi FLOAT NOT NULL,
-    interpretation VARCHAR(50) NOT NULL
+    interpretation VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
