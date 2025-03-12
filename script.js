@@ -50,7 +50,7 @@ $(document).ready(function() {
                 `);
                 $('#resultModal').modal('show');
 
-                // Update history table
+                // history table
                 $('#historyBody').empty();
                 if (response.history) {
                     response.history.forEach(function(entry) {
