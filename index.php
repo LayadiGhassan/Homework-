@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 
 require 'config/database.php';
 require 'models/BmiModel.php';
-require 'controllers/BmiController.php';
+require 'controller/BmiController.php';
 
 $model = new BmiModel($conn);
 $controller = new BmiController($model);
