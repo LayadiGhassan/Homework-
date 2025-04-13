@@ -2,28 +2,25 @@
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header("Location: ../../login.php");
     exit;
 }
 
-require_once 'BmiModel.php';
-require_once 'BmiController.php';
 
+require_once '../../config/database.php';
+$stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
+$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+$role = $user['role'];
+$stmt->close();
 
-$host = 'localhost';
-$db = 'bmi_calculator';
-$user = 'root'; 
-$pass = '';
-$conn = new mysqli($host, $user, $pass, $db);
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
+require_once '../models/BmiModel.php';
+require_once '../controllers/BmiController.php';
 
 $model = new BmiModel($conn);
 $controller = new BmiController($model);
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'], $_POST['weight'], $_POST['height'])) {
     $name = htmlspecialchars($_POST['name']);
@@ -37,6 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'], $_POST['weigh
         'history' => $model->getBmiHistory($_SESSION['user_id'])
     ];
 }
+
+// chart
+$labels = [];
+$values = [];
+foreach ($result['history'] as $entry) {
+    $labels[] = $entry['timestamp'];
+    $values[] = $entry['bmi'];
+}
 ?>
 
 <!DOCTYPE html>
@@ -45,11 +50,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'], $_POST['weigh
     <meta charset="UTF-8">
     <title>BMI Result</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
         <h1 class="mt-5">BMI Result</h1>
-        <a href="logout.php" class="btn btn-danger mb-3">Logout</a>
+        <div class="mb-3">
+            <a href="../../logout.php" class="btn btn-danger">Logout</a>
+            <?php if ($role === 'admin'): ?>
+                <a href="../../admin.php" class="btn btn-warning ml-2">Admin Panel</a>
+            <?php endif; ?>
+        </div>
         <?php if ($result['success']): ?>
             <div class="alert alert-<?php echo $result['bmi'] < 18.5 ? 'info' : ($result['bmi'] < 25 ? 'success' : ($result['bmi'] < 30 ? 'warning' : 'danger')); ?>">
                 <?php echo $result['message']; ?>
@@ -60,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'], $_POST['weigh
                 <?php echo $result['message']; ?>
             </div>
         <?php endif; ?>
-        
         
         <div class="mt-3">
             <h3>Previous Calculations</h3>
@@ -85,12 +95,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'], $_POST['weigh
                 </tbody>
             </table>
         </div>
+
+        <div class="mt-3">
+            <h3>BMI History Chart</h3>
+            <canvas id="bmiChart" width="400" height="200"></canvas>
+        </div>
         
-        <a href="bmi-form.php" class="btn btn-secondary mt-3">Back to Form</a>
+        <a href="bmi_form.php" class="btn btn-secondary mt-3">Back to Form</a>
     </div>
-    
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        const ctx = document.getElementById('bmiChart').getContext('2d');
+        const bmiChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode($labels); ?>,
+                datasets: [{
+                    label: 'BMI Over Time',
+                    data: <?php echo json_encode($values); ?>,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
 
